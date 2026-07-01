@@ -5,6 +5,7 @@ Endpoints d'authentification (Lot 3 : email-identifiant + validation + reset).
     POST /api/accounts/login/                   — se connecter (par email) -> token
     POST /api/accounts/logout/                  — se déconnecter
     GET  /api/accounts/me/                       — utilisateur courant (+ email_verified)
+    GET  /api/accounts/me/export/                — export RGPD Art. 15 (JSON)
     POST /api/accounts/verify-email/             — confirmer l'email (token du lien)
     POST /api/accounts/resend-verification/      — renvoyer l'email de validation
     POST /api/accounts/password-reset/           — demander un reset (envoie un email)
@@ -16,6 +17,8 @@ import logging
 from django.contrib.auth import login as django_login
 from django.contrib.auth import logout as django_logout
 from django.contrib.auth.models import User
+from django.http import HttpResponse
+from django.utils import timezone
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.authtoken.models import Token
@@ -24,6 +27,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .emails import EmailError, send_password_reset_email, send_verification_email
+from .export import build_user_data_export, build_zip_export
 from .models import get_or_create_profile
 from .serializers import (
     ChangePasswordSerializer,
@@ -118,6 +122,34 @@ class MeView(APIView):
         return Response(UserSerializer(request.user).data)
 
 
+class MeExportView(APIView):
+    """Exporte toutes les données personnelles de l'utilisateur connecté (RGPD Art. 15)."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        tags=["accounts"],
+        summary="Exporter mes données personnelles (JSON)",
+        responses={200: OpenApiResponse(description="Export JSON structuré (téléchargement)")},
+    )
+    def get(self, request):
+        fmt = request.query_params.get("export_format", "json").lower()
+        exported_at = timezone.now().strftime("%Y%m%dT%H%M%SZ")
+
+        if fmt == "zip":
+            zip_bytes = build_zip_export(request.user)
+            filename = f"edututor-export-user{request.user.pk}-{exported_at}.zip"
+            response = HttpResponse(zip_bytes, content_type="application/zip")
+            response["Content-Disposition"] = f'attachment; filename="{filename}"'
+            return response
+
+        data = build_user_data_export(request.user)
+        response = Response(data)
+        filename = f"edututor-export-user{request.user.pk}-{exported_at}.json"
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
+
+
 class VerifyEmailView(APIView):
     """Confirme l'adresse email à partir du token reçu par email."""
 
@@ -168,12 +200,18 @@ class ResendVerificationView(APIView):
 
 
 class PasswordResetRequestView(APIView):
-    """Demande de réinitialisation : envoie un email avec un lien (si le compte existe)."""
+    """Demande de réinitialisation : envoie un email avec un lien (si le compte existe).
+
+    T-07.1 (US-07) : réponse identique que le compte existe ou non (anti-énumération).
+    Le lien contient uid + token valide 24 h (cf. ``accounts/tokens.py``).
+    """
 
     permission_classes = [AllowAny]
     authentication_classes = []  # endpoint public : pas de CSRF via session (cf. LoginView)
 
     @extend_schema(
+        tags=["accounts"],
+        summary="Demander un lien de réinitialisation de mot de passe",
         request=PasswordResetRequestSerializer,
         responses={200: OpenApiResponse(description="Email envoyé si le compte existe")},
     )
@@ -200,14 +238,22 @@ class PasswordResetRequestView(APIView):
 
 
 class PasswordResetConfirmView(APIView):
-    """Définit le nouveau mot de passe à partir du lien (uid + token)."""
+    """Définit le nouveau mot de passe à partir du lien (uid + token).
+
+    T-07.1 (US-07) : le token expire après 24 h ou dès que le mot de passe change.
+    """
 
     permission_classes = [AllowAny]
     authentication_classes = []  # endpoint public : pas de CSRF via session (cf. LoginView)
 
     @extend_schema(
+        tags=["accounts"],
+        summary="Confirmer la réinitialisation (uid + token + nouveau mot de passe)",
         request=PasswordResetConfirmSerializer,
-        responses={200: OpenApiResponse(description="Mot de passe réinitialisé")},
+        responses={
+            200: OpenApiResponse(description="Mot de passe réinitialisé"),
+            400: OpenApiResponse(description="Lien invalide ou expiré"),
+        },
     )
     def post(self, request):
         serializer = PasswordResetConfirmSerializer(data=request.data)
