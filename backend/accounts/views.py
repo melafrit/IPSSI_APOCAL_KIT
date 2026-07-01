@@ -5,26 +5,33 @@ Endpoints d'authentification (Lot 3 : email-identifiant + validation + reset).
     POST /api/accounts/login/                   — se connecter (par email) -> token
     POST /api/accounts/logout/                  — se déconnecter
     GET  /api/accounts/me/                       — utilisateur courant (+ email_verified)
+    GET  /api/accounts/me/export/               — exporter ses données personnelles
     POST /api/accounts/verify-email/             — confirmer l'email (token du lien)
     POST /api/accounts/resend-verification/      — renvoyer l'email de validation
     POST /api/accounts/password-reset/           — demander un reset (envoie un email)
     POST /api/accounts/password-reset/confirm/   — définir le nouveau mot de passe
 """
 
+import hashlib
+import json
 import logging
 
 from django.contrib.auth import login as django_login
 from django.contrib.auth import logout as django_logout
 from django.contrib.auth.models import User
-from drf_spectacular.utils import OpenApiResponse, extend_schema
+from django.http import JsonResponse
+from django.utils import timezone
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, OpenApiTypes, extend_schema
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from quizzes.models import Quiz
+
 from .emails import EmailError, send_password_reset_email, send_verification_email
-from .models import get_or_create_profile
+from .models import DataRequest, get_or_create_profile
 from .serializers import (
     ChangePasswordSerializer,
     DeleteAccountSerializer,
@@ -116,6 +123,140 @@ class MeView(APIView):
     @extend_schema(responses={200: UserSerializer})
     def get(self, request):
         return Response(UserSerializer(request.user).data)
+
+
+class MeExportView(APIView):
+    """Export RGPD des données du compte connecté.
+
+    GET /api/accounts/me/export/?scope=personal|usage|all
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="scope",
+                location=OpenApiParameter.QUERY,
+                required=False,
+                type=OpenApiTypes.STR,
+                enum=["personal", "usage", "all"],
+                description="Périmètre d'export demandé.",
+            )
+        ],
+        responses={
+            200: OpenApiTypes.BINARY,
+            400: OpenApiResponse(description="Périmètre d'export invalide"),
+        },
+    )
+    def get(self, request):
+        scope = (request.query_params.get("scope") or "all").strip().lower()
+        if scope not in {"personal", "usage", "all"}:
+            return Response(
+                {"detail": "Périmètre d'export invalide. Utilisez personal, usage ou all."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        export_payload = self._build_export_payload(request.user, scope)
+
+        audit = DataRequest.objects.create(
+            user=request.user,
+            status="processing",
+        )
+
+        export_json = json.dumps(
+            export_payload,
+            ensure_ascii=False,
+            sort_keys=True,
+        ).encode("utf-8")
+
+        audit.export_hash = hashlib.sha256(export_json).hexdigest()
+        audit.status = "completed"
+        audit.responded_at = timezone.now()
+        audit.save()
+
+        timestamp = timezone.now().strftime("%Y%m%d-%H%M%S")
+
+        response = JsonResponse(
+            export_payload,
+            json_dumps_params={
+                "ensure_ascii": False,
+                "indent": 2,
+            },
+        )
+
+        return self._with_download_headers(
+            response,
+            f"profile-export-{scope}-{timestamp}.json",
+        )
+
+    def _build_export_payload(self, user: User, scope: str) -> dict:
+        profile = get_or_create_profile(user)
+        payload = {
+            "exported_at": timezone.now().isoformat(),
+            "scope": scope,
+        }
+
+        if scope in {"personal", "all"}:
+            payload["personal"] = {
+                "user": {
+                    "id": user.id,
+                    "username": user.username,
+                    "email": user.email,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                    "date_joined": user.date_joined.isoformat() if user.date_joined else None,
+                    "last_login": user.last_login.isoformat() if user.last_login else None,
+                    "is_active": user.is_active,
+                    "is_staff": user.is_staff,
+                    "is_superuser": user.is_superuser,
+                },
+                "profile": {
+                    "id": profile.id,
+                    "email_verified": profile.email_verified,
+                    "created_at": profile.created_at.isoformat() if profile.created_at else None,
+                },
+            }
+
+        if scope in {"usage", "all"}:
+            payload["usage"] = {
+                "quizzes": self._build_quizzes(user),
+            }
+
+        return payload
+
+    def _build_quizzes(self, user: User) -> list[dict]:
+        quizzes = []
+
+        for quiz in Quiz.objects.filter(user=user).prefetch_related("questions"):
+            quizzes.append(
+                {
+                    "id": quiz.id,
+                    "title": quiz.title,
+                    "source_text": quiz.source_text,
+                    "score": quiz.score,
+                    "created_at": quiz.created_at.isoformat() if quiz.created_at else None,
+                    "updated_at": quiz.updated_at.isoformat() if quiz.updated_at else None,
+                    "questions": [
+                        {
+                            "id": question.id,
+                            "index": question.index,
+                            "prompt": question.prompt,
+                            "options": question.options,
+                            "correct_index": question.correct_index,
+                            "selected_index": question.selected_index,
+                        }
+                        for question in quiz.questions.all()
+                    ],
+                }
+            )
+
+        return quizzes
+
+    def _with_download_headers(self, response, filename: str):
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        response["Access-Control-Expose-Headers"] = "Content-Disposition"
+        return response
 
 
 class VerifyEmailView(APIView):

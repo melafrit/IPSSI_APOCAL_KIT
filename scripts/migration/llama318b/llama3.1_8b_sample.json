@@ -1,0 +1,84 @@
+{
+  "questions": [
+    {
+      "question": "Quelle est la méthode qui permet de récupérer une ressource existante ?",
+      "a": "GET",
+      "b": "POST",
+      "c": "PUT",
+      "d": "DELETE",
+      "correct_index": 0
+    },
+    {
+      "question": "Quel code de statut indique un succès ?",
+      "a": "200",
+      "b": "404",
+      "c": "500",
+      "d": "301",
+      "correct_index": 0
+    },
+    {
+      "question": "Quelle est la méthode qui permet d'envoyer des données à un serveur ?",
+      "a": "GET",
+      "b": "POST",
+      "c": "PUT",
+      "d": "DELETE",
+      "correct_index": 1
+    },
+    {
+      "question": "Quel code de statut indique une erreur côté serveur ?",
+      "a": "200",
+      "b": "404",
+      "c": "500",
+      "d": "301",
+      "correct_index": 2
+    },
+    {
+      "question": "Quelle est la méthode qui permet de mettre à jour une ressource existante ?",
+      "a": "GET",
+      "b": "POST",
+      "c": "PUT",
+      "d": "DELETE",
+      "correct_index": 2
+    },
+    {
+      "question": "Quel code de statut indique une ressource introuvable ?",
+      "a": "200",
+      "b": "404",
+      "c": "500",
+      "d": "301",
+      "correct_index": 1
+    },
+    {
+      "question": "Quelle est la partie d'une requête HTTP qui contient l'URL et les en-têtes ?",
+      "a": "Requête",
+      "b": "Réponse",
+      "c": "En-têtes",
+      "d": "Corps",
+      "correct_index": 0
+    },
+    {
+      "question": "Quel code de statut indique un déplacement temporaire d'une ressource ?",
+      "a": "200",
+      "b": "404",
+      "c": "500",
+      "d": "301",
+      "correct_index": 3
+    },
+    {
+      "question": "Quelle est la partie d'une requête HTTP qui contient le corps de la demande ?",
+      "a": "Requête",
+      "b": "Réponse",
+      "c": "En-têtes",
+      "d": "Corps",
+      "correct_index": 3
+    },
+    {
+      "question": "Quel code de statut indique un succès après une mise à jour ou une suppression d'une ressource ?",
+      "a": "200",
+      "b": "404",
+      "c": "500",
+      "d": "201",
+      "correct_index": 0
+    }
+  ]
+}

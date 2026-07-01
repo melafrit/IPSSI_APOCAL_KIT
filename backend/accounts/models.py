@@ -42,3 +42,50 @@ def get_or_create_profile(user) -> Profile:
     """
     profile, _ = Profile.objects.get_or_create(user=user)
     return profile
+
+
+class DataRequest(models.Model):
+    """Trace les demandes d'export des données personnelles (SAR - RGPD)."""
+
+    STATUS_CHOICES = [
+        ("received", "Reçue"),
+        ("processing", "En cours"),
+        ("completed", "Répondue"),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="data_requests",
+    )
+
+    requested_at = models.DateTimeField(
+        auto_now_add=True,
+        help_text="Date de création de la demande.",
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default="received",
+        help_text="État de traitement de la demande.",
+    )
+
+    responded_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Date de réponse à la demande.",
+    )
+
+    export_hash = models.CharField(
+        max_length=64,
+        blank=True,
+        help_text="Hash SHA-256 du fichier exporté.",
+    )
+
+    class Meta:
+        verbose_name = "Demande d'export"
+        verbose_name_plural = "Demandes d'export"
+
+    def __str__(self) -> str:
+        return f"DataRequest<{self.user.email}> - {self.status}"

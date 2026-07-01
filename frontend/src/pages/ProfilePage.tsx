@@ -14,15 +14,16 @@
  *   portabilité) — placeholder présent plus bas, à implémenter pendant la semaine.
  * [TODO J4] Ajouter un bouton « Signaler un contenu / un quiz » — placeholder.
  */
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { changePassword, deleteAccount, updateProfile } from '@/api/auth';
+import { changePassword, deleteAccount, exportMyData, updateProfile } from '@/api/auth';
 import { getApiErrorMessage } from '@/api/errors';
 
 export default function ProfilePage() {
   const { user, refresh } = useAuth();
   const navigate = useNavigate();
+  const exportMenuRef = useRef<HTMLDivElement>(null);
 
   // --- Zone 1 : informations ---
   const [firstName, setFirstName] = useState(user?.first_name ?? '');
@@ -45,6 +46,43 @@ export default function ProfilePage() {
   const [delConfirm, setDelConfirm] = useState(false);
   const [delErr, setDelErr] = useState<string | null>(null);
   const [delLoading, setDelLoading] = useState(false);
+
+  // --- Zone RGPD : export ---
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const [exportLoading, setExportLoading] = useState<'personal' | 'usage' | 'all' | null>(null);
+  const [exportMsg, setExportMsg] = useState<string | null>(null);
+  const [exportErr, setExportErr] = useState<string | null>(null);
+
+  const exportScopes = [
+    ['personal', 'Informations personnelles'],
+    ['usage', "Données d'utilisation de l'app"],
+    ['all', 'Tout exporter'],
+  ] as const;
+
+  useEffect(() => {
+    const handlePointerDown = (event: MouseEvent) => {
+      if (
+        exportMenuRef.current &&
+        event.target instanceof Node &&
+        !exportMenuRef.current.contains(event.target)
+      ) {
+        setExportMenuOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setExportMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   const handleInfo = async (e: FormEvent) => {
     e.preventDefault();
@@ -95,6 +133,21 @@ export default function ProfilePage() {
     } catch (err) {
       setDelErr(getApiErrorMessage(err, 'Suppression impossible.'));
       setDelLoading(false);
+    }
+  };
+
+  const handleExport = async (scope: 'personal' | 'usage' | 'all') => {
+    setExportErr(null);
+    setExportMsg(null);
+    setExportMenuOpen(false);
+    setExportLoading(scope);
+    try {
+      const filename = await exportMyData(scope);
+      setExportMsg(`Export téléchargé : ${filename}`);
+    } catch (err) {
+      setExportErr(getApiErrorMessage(err, "Export impossible pour l'instant."));
+    } finally {
+      setExportLoading(null);
     }
   };
 
@@ -221,25 +274,61 @@ export default function ProfilePage() {
       </section>
 
       {/* Placeholders RGPD / signalement (à compléter pendant la semaine) */}
-      <section className="card bg-slate-50">
+      <section className="card">
         <h2 className="text-lg font-semibold text-slate-900 mb-2">Mes données</h2>
         <p className="text-sm text-slate-500 mb-4">
-          Fonctionnalités à construire pendant la semaine APOCAL'IPSSI.
+          Téléchargez une copie de vos données personnelles dans le format de votre choix.
         </p>
-        <div className="flex flex-wrap gap-3">
-          <button
-            type="button"
-            disabled
-            title="À implémenter (J3-bis) — droit à la portabilité RGPD"
-            className="btn-secondary opacity-60 cursor-not-allowed"
-          >
-            Exporter mes données (bientôt)
-          </button>
+        {exportMsg && (
+          <div className="mb-4 p-3 bg-emerald-50 border-l-4 border-emerald-500 text-sm text-emerald-900 rounded">
+            {exportMsg}
+          </div>
+        )}
+        {exportErr && (
+          <div className="mb-4 p-3 bg-rose-50 border-l-4 border-rose-500 text-sm text-rose-900 rounded">
+            {exportErr}
+          </div>
+        )}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+          <div className="relative w-full sm:w-[18rem]" ref={exportMenuRef}>
+            <button
+              type="button"
+              onClick={() => setExportMenuOpen((value) => !value)}
+              disabled={exportLoading !== null}
+              className="btn-secondary w-full justify-between"
+              aria-expanded={exportMenuOpen}
+              aria-haspopup="menu"
+            >
+              <span>{exportLoading ? 'Export en cours…' : 'Exporter mes données'}</span>
+              <span aria-hidden="true" className="text-xs">
+                {exportMenuOpen ? '▴' : '▾'}
+              </span>
+            </button>
+            {exportMenuOpen && (
+              <div
+                role="menu"
+                className="absolute left-0 top-full z-20 mt-2 w-full overflow-hidden rounded-md border border-slate-200 bg-white shadow-lg"
+              >
+                {exportScopes.map(([scope, label]) => (
+                  <button
+                    key={scope}
+                    type="button"
+                    role="menuitem"
+                    onClick={() => handleExport(scope)}
+                    disabled={exportLoading !== null}
+                    className="w-full px-4 py-3 text-left text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <button
             type="button"
             disabled
             title="À implémenter (J4) — signalement de contenu"
-            className="btn-secondary opacity-60 cursor-not-allowed"
+            className="btn-secondary w-full opacity-60 cursor-not-allowed sm:w-[18rem]"
           >
             Signaler un contenu (bientôt)
           </button>
