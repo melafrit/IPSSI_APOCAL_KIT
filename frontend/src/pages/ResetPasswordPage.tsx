@@ -7,15 +7,16 @@
  * appelle le backend qui valide le token (mécanisme standard Django).
  */
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { confirmPasswordReset } from '@/api/auth';
 import { getApiErrorMessage } from '@/api/errors';
 
 export default function ResetPasswordPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const uid = params.get('uid') ?? '';
-  const token = params.get('token') ?? '';
+  const routeParams = useParams<{ uid?: string; token?: string }>();
+  const uid = routeParams.uid ?? params.get('uid') ?? '';
+  const token = routeParams.token ?? params.get('token') ?? '';
 
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -28,6 +29,10 @@ export default function ResetPasswordPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+    if (password.length < 8) {
+      setError('Le mot de passe doit contenir au moins 8 caractères.');
+      return;
+    }
     if (password !== confirm) {
       setError('Les deux mots de passe ne correspondent pas.');
       return;
@@ -76,10 +81,15 @@ export default function ResetPasswordPage() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
+                <label
+                  htmlFor="new-password"
+                  className="block text-sm font-medium text-slate-700 mb-1"
+                >
                   Nouveau mot de passe
+                  <span className="text-slate-400 font-normal"> (≥ 8 caractères)</span>
                 </label>
                 <input
+                  id="new-password"
                   type="password"
                   required
                   minLength={8}
@@ -92,10 +102,14 @@ export default function ResetPasswordPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Confirmer le mot de passe
+                <label
+                  htmlFor="confirm-password"
+                  className="block text-sm font-medium text-slate-700 mb-1"
+                >
+                  Confirmation du mot de passe
                 </label>
                 <input
+                  id="confirm-password"
                   type="password"
                   required
                   minLength={8}
@@ -107,7 +121,7 @@ export default function ResetPasswordPage() {
               </div>
 
               <button type="submit" disabled={loading} className="btn-primary w-full">
-                {loading ? 'Enregistrement…' : 'Réinitialiser mon mot de passe'}
+                {loading ? 'Enregistrement…' : 'Réinitialiser le mot de passe'}
               </button>
             </form>
           </>
