@@ -1,10 +1,15 @@
 """
 Endpoints quizz :
     GET   /api/quizzes/                — historique du user connecté
+    GET   /api/quizzes/export/         — export CSV de l'historique
     GET   /api/quizzes/<id>/           — détail (avec les 10 questions)
     POST  /api/quizzes/<id>/answer/    — soumet 10 réponses, renvoie le score
 """
 
+import csv
+from io import StringIO
+
+from django.http import HttpResponse
 from django.db.models import Avg, Count, F, Max
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import OpenApiResponse, extend_schema
@@ -33,6 +38,41 @@ class QuizListView(generics.ListAPIView):
     @extend_schema(description="Liste paginée des quizz de l'utilisateur connecté.")
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
+
+
+class QuizHistoryExportView(APIView):
+    """Export CSV de l'historique des quizz du user connecté."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={200: OpenApiResponse(description="CSV de l'historique des quizz")},
+        description="Télécharge un fichier CSV contenant l'historique des quizz de l'utilisateur.",
+    )
+    def get(self, request):
+        quizzes = (
+            Quiz.objects.filter(user=request.user)
+            .annotate(nb_questions=Count("questions"))
+            .order_by("-created_at")
+        )
+
+        buffer = StringIO()
+        writer = csv.writer(buffer, delimiter=";")
+        writer.writerow(["quiz_id", "title", "score", "nb_questions", "created_at"])
+        for quiz in quizzes:
+            writer.writerow(
+                [
+                    quiz.id,
+                    quiz.title,
+                    "" if quiz.score is None else quiz.score,
+                    quiz.nb_questions,
+                    quiz.created_at.isoformat(),
+                ]
+            )
+
+        response = HttpResponse(buffer.getvalue(), content_type="text/csv; charset=utf-8")
+        response["Content-Disposition"] = 'attachment; filename="historique-quizz.csv"'
+        return response
 
 
 class QuizDetailView(generics.RetrieveAPIView):

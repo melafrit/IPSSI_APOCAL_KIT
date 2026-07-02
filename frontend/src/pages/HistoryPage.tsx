@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { listQuizzes, type QuizSummary } from '@/api/quizzes';
+import { downloadQuizHistoryCsv, listQuizzes, type QuizSummary } from '@/api/quizzes';
+import { getApiErrorMessage } from '@/api/errors';
 
 export default function HistoryPage() {
   const [quizzes, setQuizzes] = useState<QuizSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [exportLoading, setExportLoading] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   useEffect(() => {
     listQuizzes()
@@ -13,6 +16,18 @@ export default function HistoryPage() {
       .catch(() => setError("Impossible de charger l'historique."))
       .finally(() => setLoading(false));
   }, []);
+
+  const handleExport = async () => {
+    setExportError(null);
+    setExportLoading(true);
+    try {
+      await downloadQuizHistoryCsv();
+    } catch (err) {
+      setExportError(getApiErrorMessage(err, "Impossible d'exporter l'historique."));
+    } finally {
+      setExportLoading(false);
+    }
+  };
 
   if (loading) return <p className="text-slate-500">Chargement…</p>;
   if (error) return <p className="text-rose-600">{error}</p>;
@@ -28,10 +43,22 @@ export default function HistoryPage() {
               : `${quizzes.length} quiz au compteur.`}
           </p>
         </div>
-        <Link to="/upload" className="btn-primary">
-          + Nouveau quiz
-        </Link>
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={handleExport}
+            disabled={exportLoading}
+            className="btn-secondary"
+          >
+            {exportLoading ? 'Export…' : 'Exporter CSV'}
+          </button>
+          <Link to="/upload" className="btn-primary">
+            + Nouveau quiz
+          </Link>
+        </div>
       </div>
+
+      {exportError && <p className="text-sm text-rose-600">{exportError}</p>}
 
       {quizzes.length === 0 ? (
         <div className="card text-center py-12">

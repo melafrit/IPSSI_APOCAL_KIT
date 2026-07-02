@@ -1,4 +1,5 @@
 import { api } from './client';
+import { downloadBlob } from './download';
 
 export type Question = {
   index: number;
@@ -105,4 +106,10 @@ export async function getStats(): Promise<Stats> {
 export async function getMistakes(): Promise<{ count: number; mistakes: Mistake[] }> {
   const { data } = await api.get<{ count: number; mistakes: Mistake[] }>('/quizzes/mistakes/');
   return data;
+}
+
+/** Télécharge l'historique des quizz au format CSV. */
+export async function downloadQuizHistoryCsv(): Promise<void> {
+  const response = await api.get('/quizzes/export/', { responseType: 'blob' });
+  downloadBlob(response.data, 'historique-quizz.csv');
 }

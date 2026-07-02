@@ -7,6 +7,7 @@
  * uniquement l'email.
  */
 import { api, setToken, clearToken } from './client';
+import { downloadBlob } from './download';
 
 export type User = {
   id: number;
@@ -125,4 +126,10 @@ export async function deleteAccount(password: string): Promise<void> {
   // axios : le corps d'une requête DELETE se passe via la clé `data`.
   await api.delete('/accounts/profile/', { data: { password } });
   clearToken();
+}
+
+/** Télécharge l'archive ZIP contenant le profil, l'historique et les erreurs. */
+export async function downloadMyDataExport(): Promise<void> {
+  const response = await api.get('/accounts/profile/export/', { responseType: 'blob' });
+  downloadBlob(response.data, 'mes-donnees-edututor.zip');
 }

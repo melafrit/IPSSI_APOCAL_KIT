@@ -9,13 +9,19 @@ Endpoints d'authentification (Lot 3 : email-identifiant + validation + reset).
     POST /api/accounts/resend-verification/      — renvoyer l'email de validation
     POST /api/accounts/password-reset/           — demander un reset (envoie un email)
     POST /api/accounts/password-reset/confirm/   — définir le nouveau mot de passe
+    GET  /api/accounts/profile/export/          — export ZIP des données utilisateur
 """
 
+import csv
+import io
 import logging
+import zipfile
 
 from django.contrib.auth import login as django_login
 from django.contrib.auth import logout as django_logout
 from django.contrib.auth.models import User
+from django.db.models import Count, F
+from django.http import HttpResponse
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.authtoken.models import Token
@@ -37,6 +43,7 @@ from .serializers import (
     UserSerializer,
 )
 from .tokens import read_email_verify_token, read_password_reset_tokens
+from quizzes.models import Question, Quiz
 
 logger = logging.getLogger(__name__)
 
@@ -116,6 +123,113 @@ class MeView(APIView):
     @extend_schema(responses={200: UserSerializer})
     def get(self, request):
         return Response(UserSerializer(request.user).data)
+
+
+def _write_csv(writer_headers: list[str], rows: list[list[object]]) -> str:
+    buffer = io.StringIO()
+    writer = csv.writer(buffer, delimiter=";")
+    writer.writerow(writer_headers)
+    for row in rows:
+        writer.writerow(row)
+    return buffer.getvalue()
+
+
+class ProfileDataExportView(APIView):
+    """Export ZIP des données personnelles de l'utilisateur connecté."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={200: OpenApiResponse(description="Archive ZIP contenant plusieurs CSV")},
+        description=(
+            "Télécharge une archive ZIP contenant plusieurs CSV : profil, historique des quizz "
+            "et questions ratées."
+        ),
+    )
+    def get(self, request):
+        user = request.user
+        profile = get_or_create_profile(user)
+
+        profile_csv = _write_csv(
+            ["field", "value"],
+            [
+                ["id", user.id],
+                ["username", user.username],
+                ["email", user.email],
+                ["first_name", user.first_name],
+                ["last_name", user.last_name],
+                ["date_joined", user.date_joined.isoformat()],
+                ["is_staff", user.is_staff],
+                ["email_verified", profile.email_verified],
+                ["profile_created_at", profile.created_at.isoformat()],
+            ],
+        )
+
+        quizzes = (
+            Quiz.objects.filter(user=user)
+            .annotate(nb_questions=Count("questions"))
+            .order_by("-created_at")
+        )
+        quizzes_csv = _write_csv(
+            ["quiz_id", "title", "score", "nb_questions", "created_at", "updated_at"],
+            [
+                [
+                    quiz.id,
+                    quiz.title,
+                    "" if quiz.score is None else quiz.score,
+                    quiz.nb_questions,
+                    quiz.created_at.isoformat(),
+                    quiz.updated_at.isoformat(),
+                ]
+                for quiz in quizzes
+            ],
+        )
+
+        wrong_questions = (
+            Question.objects.filter(quiz__user=user, selected_index__isnull=False)
+            .exclude(selected_index=F("correct_index"))
+            .select_related("quiz")
+            .order_by("-quiz__created_at", "index")
+        )
+        mistakes_csv = _write_csv(
+            [
+                "quiz_id",
+                "quiz_title",
+                "question_index",
+                "prompt",
+                "selected_index",
+                "correct_index",
+                "selected_option",
+                "correct_option",
+            ],
+            [
+                [
+                    question.quiz_id,
+                    question.quiz.title,
+                    question.index,
+                    question.prompt,
+                    question.selected_index,
+                    question.correct_index,
+                    (
+                        question.options[question.selected_index]
+                        if question.selected_index is not None
+                        else ""
+                    ),
+                    question.options[question.correct_index],
+                ]
+                for question in wrong_questions
+            ],
+        )
+
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, mode="w", compression=zipfile.ZIP_DEFLATED) as archive:
+            archive.writestr("profil.csv", profile_csv)
+            archive.writestr("historique-quizz.csv", quizzes_csv)
+            archive.writestr("questions-ratees.csv", mistakes_csv)
+
+        response = HttpResponse(zip_buffer.getvalue(), content_type="application/zip")
+        response["Content-Disposition"] = 'attachment; filename="mes-donnees-edututor.zip"'
+        return response
 
 
 class VerifyEmailView(APIView):

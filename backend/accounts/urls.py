@@ -2,6 +2,7 @@ from django.urls import path
 
 from .views import (
     ChangePasswordView,
+    ProfileDataExportView,
     LoginView,
     LogoutView,
     MeView,
@@ -29,5 +30,6 @@ urlpatterns = [
     ),
     # Profil (modifier / changer mot de passe / supprimer le compte)
     path("profile/", ProfileView.as_view(), name="profile"),
+    path("profile/export/", ProfileDataExportView.as_view(), name="profile-export"),
     path("change-password/", ChangePasswordView.as_view(), name="change-password"),
 ]
