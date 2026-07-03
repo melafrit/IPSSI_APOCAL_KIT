@@ -126,3 +126,17 @@ export async function deleteAccount(password: string): Promise<void> {
   await api.delete('/accounts/profile/', { data: { password } });
   clearToken();
 }
+
+export type ExportFormat = 'json' | 'zip';
+
+/** Exporte les données personnelles de l'utilisateur connecté. */
+export async function exportMyData(format: ExportFormat = 'json'): Promise<{ blob: Blob; filename: string }> {
+  const response = await api.get('/accounts/me/export/', {
+    params: { format },
+    responseType: 'blob',
+  });
+  const disposition = response.headers['content-disposition'] || '';
+  const match = /filename="?([^";]+)"?/i.exec(disposition);
+  const filename = match?.[1] ?? `edututor-ia-export.${format === 'zip' ? 'zip' : 'json'}`;
+  return { blob: response.data as Blob, filename };
+}

@@ -15,8 +15,9 @@ export async function ping(): Promise<LLMPing> {
 }
 
 /**
- * Génère un quiz à partir d'un PDF ou d'un texte.
- * Renvoie le quiz complet (avec les 10 questions et leur bonne réponse).
+ * Lance la génération d'un quiz à partir d'un PDF ou d'un texte.
+ * Renvoie immédiatement le quiz créé (status: pending).
+ * La génération LLM se déroule en arrière-plan (polling nécessaire).
  */
 export async function generateQuiz(input: {
   title: string;
@@ -30,9 +31,9 @@ export async function generateQuiz(input: {
 
   const { data } = await api.post<Quiz>('/llm/generate-quiz/', form, {
     headers: { 'Content-Type': 'multipart/form-data' },
-    // La génération LLM sur CPU peut prendre plusieurs minutes : on dépasse
-    // largement le timeout axios par défaut (120 s). Aligné sur OLLAMA_TIMEOUT.
-    timeout: 600_000,
+    // Le backend répond maintenant immédiatement (201) sans attendre le LLM.
+    // Un timeout court suffit.
+    timeout: 10_000,
   });
   return data;
 }

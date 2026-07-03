@@ -17,7 +17,7 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { changePassword, deleteAccount, updateProfile } from '@/api/auth';
+import { changePassword, deleteAccount, exportMyData, updateProfile } from '@/api/auth';
 import { getApiErrorMessage } from '@/api/errors';
 
 export default function ProfilePage() {
@@ -45,6 +45,8 @@ export default function ProfilePage() {
   const [delConfirm, setDelConfirm] = useState(false);
   const [delErr, setDelErr] = useState<string | null>(null);
   const [delLoading, setDelLoading] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
+  const [exportMsg, setExportMsg] = useState<string | null>(null);
 
   const handleInfo = async (e: FormEvent) => {
     e.preventDefault();
@@ -95,6 +97,27 @@ export default function ProfilePage() {
     } catch (err) {
       setDelErr(getApiErrorMessage(err, 'Suppression impossible.'));
       setDelLoading(false);
+    }
+  };
+
+  const handleExport = async () => {
+    setExportMsg(null);
+    setExportLoading(true);
+    try {
+      const { blob, filename } = await exportMyData('json');
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      setExportMsg('Votre export est en cours de téléchargement.');
+    } catch (err) {
+      setExportMsg(getApiErrorMessage(err, 'Export impossible.'));
+    } finally {
+      setExportLoading(false);
     }
   };
 
@@ -224,17 +247,21 @@ export default function ProfilePage() {
       <section className="card bg-slate-50">
         <h2 className="text-lg font-semibold text-slate-900 mb-2">Mes données</h2>
         <p className="text-sm text-slate-500 mb-4">
-          Fonctionnalités à construire pendant la semaine APOCAL'IPSSI.
+          Export RGPD de vos données personnelles, au format JSON lisible par machine.
         </p>
+        {exportMsg && <p className="text-sm text-slate-600 mb-3">{exportMsg}</p>}
         <div className="flex flex-wrap gap-3">
           <button
             type="button"
-            disabled
-            title="À implémenter (J3-bis) — droit à la portabilité RGPD"
-            className="btn-secondary opacity-60 cursor-not-allowed"
+            onClick={handleExport}
+            disabled={exportLoading}
+            className="btn-secondary"
           >
-            Exporter mes données (bientôt)
+            {exportLoading ? 'Export en cours…' : 'Exporter mes données'}
           </button>
+          <a href="/legal/confidentialite" className="btn-secondary">
+            Politique de conservation
+          </a>
           <button
             type="button"
             disabled

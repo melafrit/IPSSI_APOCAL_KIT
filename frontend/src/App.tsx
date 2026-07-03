@@ -17,6 +17,7 @@ import HistoryPage from '@/pages/HistoryPage';
 import ProfilePage from '@/pages/ProfilePage';
 import DashboardPage from '@/pages/DashboardPage';
 import ReviewMistakesPage from '@/pages/ReviewMistakesPage';
+import TeacherPage from '@/pages/teacher/TeacherPage';
 import AdminPage from '@/pages/admin/AdminPage';
 import MentionsLegalesPage from '@/pages/legal/MentionsLegalesPage';
 import ConfidentialitePage from '@/pages/legal/ConfidentialitePage';
@@ -91,6 +92,14 @@ export default function App() {
                     <RequireAuth>
                       <ReviewMistakesPage />
                     </RequireAuth>
+                  }
+                />
+                <Route
+                  path="teacher"
+                  element={
+                    <RequireAdmin>
+                      <TeacherPage />
+                    </RequireAdmin>
                   }
                 />
                 <Route

@@ -6,6 +6,7 @@ La config se veut pédagogique : commentaires partout, sections clairement
 séparées. Adaptez ce qui vous est utile.
 """
 
+import os
 from pathlib import Path
 
 from decouple import Csv, config
@@ -103,16 +104,26 @@ TEMPLATES = [
 # ----------------------------------------------------------------------------
 # Base de données — Postgres via Docker
 # ----------------------------------------------------------------------------
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": config("POSTGRES_DB", default="apocal"),
-        "USER": config("POSTGRES_USER", default="apocal"),
-        "PASSWORD": config("POSTGRES_PASSWORD", default="apocal-dev-only"),
-        "HOST": config("POSTGRES_HOST", default="postgres"),
-        "PORT": config("POSTGRES_PORT", default="5432"),
+TESTING = os.getenv("DJANGO_TESTING", "False").lower() in ("1", "true", "yes") or "PYTEST_CURRENT_TEST" in os.environ
+
+if TESTING:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": config("POSTGRES_DB", default="apocal"),
+            "USER": config("POSTGRES_USER", default="apocal"),
+            "PASSWORD": config("POSTGRES_PASSWORD", default="apocal-dev-only"),
+            "HOST": config("POSTGRES_HOST", default="postgres"),
+            "PORT": config("POSTGRES_PORT", default="5432"),
+        }
+    }
 
 # ----------------------------------------------------------------------------
 # Validation mots de passe
@@ -165,6 +176,9 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.TokenAuthentication",
         "rest_framework.authentication.SessionAuthentication",
     ],
+    # Le projet utilise déjà un paramètre `format` côté métier pour l'export RGPD.
+    # On désactive donc l'override de rendu par query string pour éviter un conflit.
+    "URL_FORMAT_OVERRIDE": None,
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
@@ -227,7 +241,7 @@ LLM_BACKEND = config("LLM_BACKEND", default="ollama")
 
 # --- Ollama (local, gratuit) ---
 OLLAMA_HOST = config("OLLAMA_HOST", default="http://ollama:11434")
-OLLAMA_MODEL = config("OLLAMA_MODEL", default="llama3.1:8b")
+OLLAMA_MODEL = config("OLLAMA_MODEL", default="llama3.2:3b")
 # Délai max (secondes) d'attente d'une génération Ollama. Sur CPU, un modèle 8B
 # met facilement 2 à 5 minutes pour 10 QCM : 120 s était trop court (timeout ->
 # 502). Défaut généreux, ajustable via .env (OLLAMA_TIMEOUT).

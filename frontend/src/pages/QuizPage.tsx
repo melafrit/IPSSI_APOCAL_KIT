@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getQuiz, submitAnswers, type Quiz, type AnswerResult } from '@/api/quizzes';
 
@@ -12,13 +12,48 @@ export default function QuizPage() {
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const loadedAtRef = useRef<number>(Date.now());
 
   useEffect(() => {
+    let pollHandle: ReturnType<typeof setInterval> | null = null;
+    let cancelled = false;
+
+    const fetchQuiz = async () => {
+      try {
+        const data = await getQuiz(quizId);
+        if (!cancelled) {
+          setQuiz(data);
+        }
+
+        const isGenerating = data.status && data.status !== 'completed' && data.status !== 'failed';
+        if (isGenerating && !pollHandle) {
+          pollHandle = setInterval(fetchQuiz, 1500);
+        }
+
+        if (!isGenerating && pollHandle) {
+          clearInterval(pollHandle);
+          pollHandle = null;
+        }
+      } catch {
+        if (!cancelled) {
+          setError('Impossible de charger ce quiz.');
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
     setLoading(true);
-    getQuiz(quizId)
-      .then(setQuiz)
-      .catch(() => setError('Impossible de charger ce quiz.'))
-      .finally(() => setLoading(false));
+    fetchQuiz();
+
+    return () => {
+      cancelled = true;
+      if (pollHandle) {
+        clearInterval(pollHandle);
+      }
+    };
   }, [quizId]);
 
   const handleSelect = (questionIndex: number, optionIndex: number) => {
@@ -47,6 +82,49 @@ export default function QuizPage() {
   if (loading) return <p className="text-slate-500">Chargement du quiz…</p>;
   if (error) return <p className="text-rose-600">{error}</p>;
   if (!quiz) return null;
+
+  if (quiz.status && quiz.status !== 'completed') {
+    if (quiz.status === 'failed') {
+      return (
+        <div className="card max-w-xl mx-auto border-rose-500 bg-rose-50 text-rose-900 p-6 text-center space-y-4">
+          <h2 className="text-xl font-bold">Échec de la génération</h2>
+          <p className="text-slate-700">
+            {quiz.error_message || "Une erreur s'est produite lors de la génération de ce quiz."}
+          </p>
+          <Link to="/upload" className="btn-primary inline-block">
+            Créer un nouveau quiz
+          </Link>
+        </div>
+      );
+    }
+    return (
+      <div className="card max-w-xl mx-auto p-8 text-center space-y-6 bg-white shadow-xl border border-slate-100 rounded-2xl">
+        <h2 className="text-xl font-bold text-slate-800">Quiz en cours de génération...</h2>
+        <div className="relative flex items-center justify-center h-16 w-16 mx-auto">
+          <span className="animate-ping absolute inline-flex h-12 w-12 rounded-full bg-indigo-400 opacity-25"></span>
+          <div className="flex items-center justify-center h-12 w-12 rounded-full bg-indigo-50 border border-indigo-100 text-xl animate-pulse">
+            ⏳
+          </div>
+        </div>
+        <p className="text-slate-600 text-sm">
+          Ce quiz est en cours de création par l'IA. L'étape à 60% correspond à la génération LLM,
+          qui peut être la plus longue.
+        </p>
+        <p className="text-slate-500 text-xs">
+          Progression actuelle : {Math.min(100, Math.max(0, (quiz.progress_step ?? 0) * 20))}% ·
+          attente {Math.max(1, Math.floor((Date.now() - loadedAtRef.current) / 1000))} s
+        </p>
+        <div className="flex justify-center gap-4">
+          <Link to="/upload" className="btn-secondary">
+            Retour
+          </Link>
+          <Link to="/history" className="btn-primary">
+            Mon historique
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const allAnswered = Object.keys(answers).length === 10;
 

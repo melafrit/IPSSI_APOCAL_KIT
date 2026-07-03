@@ -57,9 +57,14 @@ export default function Layout() {
                   Historique
                 </Link>
                 {user.is_staff && (
-                  <Link to="/admin" className="text-amber-600 font-medium hover:text-amber-700">
-                    Admin
-                  </Link>
+                  <>
+                    <Link to="/teacher" className="text-amber-600 font-medium hover:text-amber-700">
+                      Professeur
+                    </Link>
+                    <Link to="/admin" className="text-amber-600 font-medium hover:text-amber-700">
+                      Admin
+                    </Link>
+                  </>
                 )}
                 <span className="text-slate-500">|</span>
                 <Link

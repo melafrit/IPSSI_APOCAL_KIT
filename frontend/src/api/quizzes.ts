@@ -14,6 +14,9 @@ export type Quiz = {
   score: number | null;
   created_at: string;
   questions: Question[];
+  status?: 'pending' | 'processing' | 'completed' | 'failed';
+  progress_step?: number;
+  error_message?: string;
 };
 
 export type QuizSummary = {
@@ -22,6 +25,9 @@ export type QuizSummary = {
   score: number | null;
   nb_questions: number;
   created_at: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  progress_step: number;
+  error_message: string;
 };
 
 type PaginatedQuizzes = {

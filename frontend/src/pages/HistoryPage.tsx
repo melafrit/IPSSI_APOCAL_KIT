@@ -8,10 +8,47 @@ export default function HistoryPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    listQuizzes()
-      .then((res) => setQuizzes(res.results))
-      .catch(() => setError("Impossible de charger l'historique."))
-      .finally(() => setLoading(false));
+    let cancelled = false;
+    let pollHandle: ReturnType<typeof setInterval> | null = null;
+
+    const fetchHistory = async () => {
+      try {
+        const res = await listQuizzes();
+        if (!cancelled) {
+          setQuizzes(res.results);
+        }
+
+        const hasInProgress = res.results.some(
+          (q) => q.status === 'pending' || q.status === 'processing',
+        );
+
+        if (hasInProgress && !pollHandle) {
+          pollHandle = setInterval(fetchHistory, 1500);
+        }
+
+        if (!hasInProgress && pollHandle) {
+          clearInterval(pollHandle);
+          pollHandle = null;
+        }
+      } catch {
+        if (!cancelled) {
+          setError("Impossible de charger l'historique.");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchHistory();
+
+    return () => {
+      cancelled = true;
+      if (pollHandle) {
+        clearInterval(pollHandle);
+      }
+    };
   }, []);
 
   if (loading) return <p className="text-slate-500">Chargement…</p>;
@@ -53,7 +90,7 @@ export default function HistoryPage() {
                 <span className="font-mono text-xs text-slate-500">
                   #{q.id} · {new Date(q.created_at).toLocaleDateString('fr-FR')}
                 </span>
-                {q.score !== null && (
+                {q.status === 'completed' && q.score !== null && (
                   <span
                     className={`px-2 py-0.5 rounded font-mono text-sm font-bold ${
                       q.score >= 7
@@ -66,14 +103,35 @@ export default function HistoryPage() {
                     {q.score} / 10
                   </span>
                 )}
-                {q.score === null && (
+                {q.status === 'completed' && q.score === null && (
                   <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-xs font-mono">
                     pas encore passé
                   </span>
                 )}
+                {q.status === 'pending' && (
+                  <span className="px-2 py-0.5 rounded bg-indigo-100 text-indigo-700 text-xs font-mono">
+                    en file d'attente
+                  </span>
+                )}
+                {q.status === 'processing' && (
+                  <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-700 text-xs font-mono animate-pulse">
+                    génération {Math.min(100, Math.max(0, q.progress_step * 20))}%
+                  </span>
+                )}
+                {q.status === 'failed' && (
+                  <span className="px-2 py-0.5 rounded bg-rose-100 text-rose-700 text-xs font-mono">
+                    échec
+                  </span>
+                )}
               </div>
               <h3 className="font-semibold text-slate-900 mb-1">{q.title}</h3>
-              <p className="text-sm text-slate-500">{q.nb_questions} questions</p>
+              <p className="text-sm text-slate-500">
+                {q.nb_questions} question{q.nb_questions > 1 ? 's' : ''}
+                {q.status !== 'completed' ? ' enregistrée(s) pour l’instant' : ''}
+              </p>
+              {q.status === 'failed' && q.error_message && (
+                <p className="text-xs text-rose-700 mt-2 line-clamp-2">{q.error_message}</p>
+              )}
             </Link>
           ))}
         </div>

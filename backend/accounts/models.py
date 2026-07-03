@@ -42,3 +42,87 @@ def get_or_create_profile(user) -> Profile:
     """
     profile, _ = Profile.objects.get_or_create(user=user)
     return profile
+
+
+class DataRequest(models.Model):
+    """Trace une demande d'accès aux données personnelles (SAR RGPD)."""
+
+    class Status(models.TextChoices):
+        RECEIVED = "received", "Reçue"
+        PROCESSING = "processing", "En cours"
+        RESPONDED = "responded", "Répondue"
+
+    requester = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="data_requests",
+        help_text="Utilisateur ayant demandé l'export.",
+    )
+    requested_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.RECEIVED)
+    requested_format = models.CharField(max_length=20, default="json")
+    responded_at = models.DateTimeField(null=True, blank=True)
+    export_hash = models.CharField(max_length=64, blank=True, default="")
+    export_filename = models.CharField(max_length=255, blank=True, default="")
+    response_size = models.PositiveIntegerField(null=True, blank=True)
+    error_message = models.TextField(blank=True, default="")
+
+    class Meta:
+        ordering = ["-requested_at"]
+        verbose_name = "Demande d'accès aux données"
+        verbose_name_plural = "Demandes d'accès aux données"
+
+    def __str__(self) -> str:
+        return f"SAR<{self.requester.email or self.requester.username}>/{self.status}"
+
+
+class AuditEvent(models.Model):
+    """Journal minimal des événements métier liés à un utilisateur."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="audit_events",
+        help_text="Utilisateur concerné par l'événement.",
+    )
+    event_type = models.CharField(max_length=40)
+    message = models.CharField(max_length=255, blank=True, default="")
+    payload = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Événement d'audit"
+        verbose_name_plural = "Événements d'audit"
+
+    def __str__(self) -> str:
+        return f"Audit<{self.user_id}:{self.event_type}>"
+
+
+class TeacherSuggestion(models.Model):
+    """Suggestion pédagogique laissée par un professeur pour un élève."""
+
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="written_teacher_suggestions",
+        help_text="Professeur à l'origine de la suggestion.",
+    )
+    recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="received_teacher_suggestions",
+        help_text="Élève destinataire de la suggestion.",
+    )
+    title = models.CharField(max_length=120)
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    read_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Suggestion pédagogique"
+        verbose_name_plural = "Suggestions pédagogiques"
+
+    def __str__(self) -> str:
+        return f"Suggestion<{self.recipient_id}:{self.title}>"

@@ -4,10 +4,15 @@ from .views import (
     ChangePasswordView,
     LoginView,
     LogoutView,
+    MeTeacherSuggestionsView,
     MeView,
+    MeExportView,
     PasswordResetConfirmView,
     PasswordResetRequestView,
     ProfileView,
+    TeacherStudentDetailView,
+    TeacherStudentSuggestionView,
+    TeacherStudentsView,
     ResendVerificationView,
     SignupView,
     VerifyEmailView,
@@ -19,6 +24,8 @@ urlpatterns = [
     path("login/", LoginView.as_view(), name="login"),
     path("logout/", LogoutView.as_view(), name="logout"),
     path("me/", MeView.as_view(), name="me"),
+    path("me/export/", MeExportView.as_view(), name="me-export"),
+    path("me/suggestions/", MeTeacherSuggestionsView.as_view(), name="me-teacher-suggestions"),
     # Validation d'email (lien reçu par email)
     path("verify-email/", VerifyEmailView.as_view(), name="verify-email"),
     path("resend-verification/", ResendVerificationView.as_view(), name="resend-verification"),
@@ -30,4 +37,12 @@ urlpatterns = [
     # Profil (modifier / changer mot de passe / supprimer le compte)
     path("profile/", ProfileView.as_view(), name="profile"),
     path("change-password/", ChangePasswordView.as_view(), name="change-password"),
+    # Espace professeur (comptes staff)
+    path("teacher/students/", TeacherStudentsView.as_view(), name="teacher-students"),
+    path("teacher/students/<int:pk>/", TeacherStudentDetailView.as_view(), name="teacher-student-detail"),
+    path(
+        "teacher/students/<int:pk>/suggestions/",
+        TeacherStudentSuggestionView.as_view(),
+        name="teacher-student-suggestion",
+    ),
 ]

@@ -26,6 +26,26 @@ class Quiz(models.Model):
         blank=True,
         help_text="Score /10 obtenu lors de la dernière tentative (None si pas encore passé).",
     )
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ("pending", "En attente"),
+            ("processing", "Génération en cours"),
+            ("completed", "Généré"),
+            ("failed", "Échec"),
+        ],
+        default="completed",
+        help_text="Statut de la génération du quiz.",
+    )
+    progress_step = models.PositiveIntegerField(
+        default=0,
+        help_text="Étape actuelle de la génération (0 à 5).",
+    )
+    error_message = models.TextField(
+        blank=True,
+        default="",
+        help_text="Message d'erreur en cas d'échec.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

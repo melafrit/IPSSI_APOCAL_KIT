@@ -10,6 +10,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getStats, type Stats } from '@/api/quizzes';
 import { getApiErrorMessage } from '@/api/errors';
+import { getMyTeacherSuggestions, type TeacherSuggestion } from '@/api/teacher';
 
 /** Couleur d'une barre selon le score (vert / ambre / rouge). */
 function barColor(score: number): string {
@@ -30,12 +31,16 @@ function KpiCard({ label, value, hint }: { label: string; value: string; hint?: 
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
+  const [suggestions, setSuggestions] = useState<TeacherSuggestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    getStats()
-      .then(setStats)
+    Promise.all([getStats(), getMyTeacherSuggestions()])
+      .then(([statsData, suggestionsData]) => {
+        setStats(statsData);
+        setSuggestions(suggestionsData);
+      })
       .catch((err) => setError(getApiErrorMessage(err, 'Impossible de charger les statistiques.')))
       .finally(() => setLoading(false));
   }, []);
@@ -70,6 +75,42 @@ export default function DashboardPage() {
         </div>
       ) : (
         <>
+          {suggestions.length > 0 ? (
+            <div className="card border border-amber-200 bg-amber-50/60">
+              <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
+                <div>
+                  <h2 className="text-lg font-semibold text-slate-900">Suggestions du professeur</h2>
+                  <p className="text-sm text-slate-500">Vos recommandations personnalisées.</p>
+                </div>
+                <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-semibold">
+                  {suggestions.length} suggestion{suggestions.length > 1 ? 's' : ''}
+                </span>
+              </div>
+              <div className="space-y-3">
+                {suggestions.map((suggestion) => (
+                  <div key={suggestion.id} className="rounded-lg border border-amber-200 bg-white p-4">
+                    <div className="flex items-center justify-between gap-3 flex-wrap mb-2">
+                      <h3 className="font-semibold text-slate-900">{suggestion.title}</h3>
+                      <span className="text-xs text-slate-400">
+                        {new Date(suggestion.created_at).toLocaleDateString('fr-FR')}
+                      </span>
+                    </div>
+                    <p className="text-sm text-slate-700 whitespace-pre-line">{suggestion.message}</p>
+                    <p className="text-xs text-slate-400 mt-2">Par {suggestion.author_name}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="card border border-slate-200 bg-slate-50/80">
+              <h2 className="text-lg font-semibold text-slate-900">Suggestions du professeur</h2>
+              <p className="text-sm text-slate-500 mt-1">
+                Aucune recommandation pour le moment. Votre professeur pourra vous laisser ici des
+                pistes de travail ciblées.
+              </p>
+            </div>
+          )}
+
           {/* KPIs */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <KpiCard
