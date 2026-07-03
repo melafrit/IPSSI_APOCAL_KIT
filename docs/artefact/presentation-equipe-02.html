@@ -363,37 +363,37 @@
     <div class="team-card" style="border-top:2px solid var(--primary);">
       <div class="team-avatar">AS</div>
       <div class="team-name">Adja Fatou<br>SAGNA</div>
-      <div class="team-role">🗺️ Customer Journey<br>& Scrum Master J1</div>
+      <div class="team-role">👤 Personas</div>
     </div>
     <div class="team-card" style="border-top:2px solid var(--secondary);">
       <div class="team-avatar">ON</div>
       <div class="team-name">Ousmane<br>NDIAYE</div>
-      <div class="team-role">📋 Product Backlog<br>& RGPD J3B</div>
+      <div class="team-role">⚙️ Back-End LLM <br>& Release Planning</div>
     </div>
     <div class="team-card" style="border-top:2px solid var(--accent);">
       <div class="team-avatar">HO</div>
       <div class="team-name">Houda<br>OUADAH</div>
-      <div class="team-role">👤 Personas<br>& Sécurité J3</div>
+      <div class="team-role">👤 Cusctomer journey</div>
     </div>
     <div class="team-card" style="border-top:2px solid var(--gold);">
       <div class="team-avatar">DK</div>
       <div class="team-name">Danielle Jamila<br>KOAGNE NGANKAM</div>
-      <div class="team-role">🗂️ Story Map<br>& Rituels Agile</div>
+      <div class="team-role">Product vision board</div>
     </div>
     <div class="team-card" style="border-top:2px solid #a9a4ff;">
       <div class="team-avatar">WS</div>
       <div class="team-name">Wicramachine<br>SERGIO</div>
-      <div class="team-role">🏗️ Architecture<br>& Démo MVP</div>
+      <div class="team-role">📋 Product Backlog</div>
     </div>
     <div class="team-card" style="border-top:2px solid var(--secondary);">
       <div class="team-avatar">KK</div>
       <div class="team-name">Krishmini<br>KULAKRISHNA</div>
-      <div class="team-role">⚖️ MoSCoW J1<br>& Release Planning</div>
+      <div class="team-role">🗂️ Story Map</div>
     </div>
     <div class="team-card" style="border-top:2px solid var(--accent);">
       <div class="team-avatar">MD</div>
       <div class="team-name">Mohammed<br>DERKAOUI</div>
-      <div class="team-role">⚙️ ADR J2<br>& Back-End LLM</div>
+      <div class="team-role">RGPD</div>
     </div>
     <div class="team-card" style="background:rgba(108,99,255,.1); border:1px dashed rgba(108,99,255,.4);">
       <div style="font-size:2rem; margin-bottom:8px;">🎯</div>
@@ -430,7 +430,7 @@
   <div class="card" style="margin-top:16px;border-color:rgba(108,99,255,.4);background:rgba(108,99,255,.1);">
     <p style="text-align:center;font-size:.9rem;">💡 <strong style="color:var(--text);">Notre réponse :</strong> EduTutor IA — quiz génératif en <span class="hl">&lt; 5 min</span>, LLM 100% local, données jamais partagées, interface enseignant intégrée.</p>
   </div>
-  <div class="speaker"><div class="speaker-dot"></div>Wicramachine SERGIO — Architecture produit</div>
+  <div class="speaker"><div class="speaker-dot"></div>Krishmini KULAKRISHNA — Architecture produit</div>
 </div>
 
 <!-- ═══════════════════════════════════════
@@ -471,7 +471,7 @@
       </div>
     </div>
   </div>
-  <div class="speaker"><div class="speaker-dot"></div>Krishmini KULAKRISHNA — Product Owner</div>
+  <div class="speaker"><div class="speaker-dot"></div>Danielle Jamila Koagne Ngankam — Product Vision Board</div>
 </div>
 
 <!-- ═══════════════════════════════════════
@@ -595,61 +595,217 @@
 <div class="slide bg-dark">
   <div class="section-label">Cadrage</div>
   <div class="kicker">Artefact 4/7</div>
+
   <h2>Story Map · 6 activités × 4 niveaux MoSCoW</h2>
-  <div class="w-full" style="overflow-x:auto;margin-top:6px;">
-    <table style="font-size:.72rem;">
+
+  <div class="w-full" style="overflow-x:auto;margin-top:8px;">
+    <table style="font-size:.63rem;min-width:1550px;">
       <thead>
         <tr>
-          <th style="width:100px;">Niveau</th>
+          <th style="width:120px;">Niveau</th>
           <th>S'inscrire</th>
-          <th>Uploader cours</th>
-          <th>Générer quiz</th>
-          <th>Passer quiz</th>
-          <th>Consulter résultats</th>
-          <th>Gérer compte</th>
+          <th>Uploader un cours</th>
+          <th>Générer un quiz</th>
+          <th>Passer le quiz</th>
+          <th>Consulter les résultats</th>
+          <th>Gérer son compte (RGPD)</th>
         </tr>
       </thead>
+
       <tbody>
+
+        <!-- MUST -->
         <tr style="background:rgba(255,107,107,.08);">
           <td><span class="chip must">MUST</span></td>
-          <td><strong>US-01</strong> Inscription email</td>
-          <td><strong>US-02</strong> Upload PDF/texte</td>
-          <td><strong>US-03</strong> 10 QCM &lt;60s</td>
-          <td><strong>US-04</strong> Correction auto</td>
-          <td><strong>US-05</strong> Score /10 · <strong>US-21</strong> Scores étudiants</td>
-          <td><strong>US-06</strong> Connexion/profil</td>
+
+          <td>
+            <strong>US-01</strong><br>
+            Inscription email + mot de passe
+          </td>
+
+          <td>
+            <strong>US-02</strong><br>
+            Upload PDF ≤ 5 Mo ou texte ≥ 200 caractères
+            <br><br>
+            <strong>US-24</strong><br>
+            Document accessible (PDF lisible lecteur d'écran)
+          </td>
+
+          <td>
+            <strong>US-03</strong><br>
+            Génération automatique de 10 QCM (Llama 3.1 8B)
+            <br><br>
+            <strong>US-25</strong><br>
+            Générer le quiz dans la langue choisie (FR / EN / ES)
+          </td>
+
+          <td>
+            <strong>US-04</strong><br>
+            Soumettre les réponses et obtenir la correction
+          </td>
+
+          <td>
+            <strong>US-05</strong><br>
+            Afficher le score /10
+            <br><br>
+            <strong>US-21</strong><br>
+            Consulter les scores des étudiants
+          </td>
+
+          <td>
+            <strong>US-06</strong><br>
+            Connexion / Déconnexion<br>
+            Modifier son profil
+          </td>
         </tr>
-        <tr style="background:rgba(255,217,61,.06);">
+
+        <!-- SHOULD -->
+        <tr style="background:rgba(255,217,61,.07);">
           <td><span class="chip should">SHOULD</span></td>
-          <td><strong>US-07</strong> Reset password</td>
+
+          <td>
+            <strong>US-07</strong><br>
+            Réinitialiser le mot de passe
+          </td>
+
           <td>—</td>
-          <td>—</td>
-          <td><strong>US-10</strong> Mode timer</td>
-          <td><strong>US-11</strong> Dashboard · <strong>US-22</strong> Tableau classe</td>
-          <td><strong>US-12</strong> Export RGPD · <strong>US-23</strong> Conseils</td>
+
+          <td>
+            <strong>US-26</strong><br>
+            Changer la langue du LLM à la volée
+          </td>
+
+          <td>
+            <strong>US-10</strong><br>
+            Mode chronométré (10–30 s)
+          </td>
+
+          <td>
+            <strong>US-11</strong><br>
+            Dashboard progression
+            <br><br>
+
+            <strong>US-NEW-04</strong><br>
+            Génération automatique du barème
+            <br><br>
+
+            <strong>US-27</strong><br>
+            Contrastes améliorés & navigation clavier (RGAA)
+          </td>
+
+          <td>
+            <strong>US-12</strong><br>
+            Export RGPD (JSON + CSV)
+            <br><br>
+
+            <strong>US-23</strong><br>
+            Conseils personnalisés aux étudiants
+          </td>
         </tr>
+
+        <!-- COULD -->
         <tr style="background:rgba(108,99,255,.06);">
           <td><span class="chip could">COULD</span></td>
-          <td><strong>US-13</strong> OAuth Google</td>
-          <td><strong>US-14</strong> Import URL</td>
-          <td><strong>US-15</strong> Questions ouvertes</td>
-          <td>Flashcards Anki</td>
-          <td><strong>US-16</strong> Lacunes auto · <strong>US-22</strong> Board classe</td>
-          <td><strong>US-17</strong> Suppr. compte RGPD</td>
+
+          <td>
+            <strong>US-13</strong><br>
+            Connexion Google / Apple
+          </td>
+
+          <td>
+            <strong>US-14</strong><br>
+            Importer un cours depuis une URL
+          </td>
+
+          <td>
+            <strong>US-15</strong><br>
+            Questions ouvertes corrigées par IA
+          </td>
+
+          <td>
+            Flashcards type Anki
+          </td>
+
+          <td>
+            <strong>US-16</strong><br>
+            Identifier automatiquement les chapitres à retravailler
+            <br><br>
+
+            <strong>US-22</strong><br>
+            Tableau de bord de la classe
+            <br><br>
+
+            <strong>US-28</strong><br>
+            Traduction complète de l'interface
+          </td>
+
+          <td>
+            <strong>US-17</strong><br>
+            Suppression du compte + données (droit à l'oubli)
+            <br><br>
+
+            <strong>US-29</strong><br>
+            Choisir la langue du compte
+          </td>
         </tr>
-        <tr style="background:rgba(74,74,106,.1);">
+
+        <!-- WON'T -->
+        <tr style="background:rgba(74,74,106,.10);">
           <td><span class="chip wont">WON'T</span></td>
-          <td><strong>US-18</strong> SSO SAML</td>
-          <td>Import audio/vidéo</td>
-          <td><strong>US-09</strong> Difficulté/nb questions</td>
-          <td><strong>US-20</strong> Quiz multijoueur</td>
-          <td>Statistiques temps réel</td>
-          <td>Personnalisation UI</td>
+
+          <td>
+            <strong>US-18</strong><br>
+            SSO entreprise (SAML/OIDC)
+          </td>
+
+          <td>
+            <strong>US-08</strong><br>
+            Bibliothèque personnelle
+            <br><br>
+            Import audio / vidéo avec transcription
+          </td>
+
+          <td>
+            <strong>US-09</strong><br>
+            Choisir la difficulté et le nombre de questions
+            <br><br>
+
+            <strong>US-19</strong><br>
+            Quiz multijoueur
+          </td>
+
+          <td>
+            <strong>US-20</strong><br>
+            Chat IA conversationnel
+          </td>
+
+          <td>
+            Statistiques temps réel
+            <br><br>
+
+            <strong>US-30</strong><br>
+            Autoscaling Kubernetes
+          </td>
+
+          <td>
+            Personnalisation du thème UI
+          </td>
         </tr>
+
       </tbody>
     </table>
   </div>
-  <div class="speaker"><div class="speaker-dot"></div>Danielle Jamila KOAGNE NGANKAM — Story Mapping</div>
+
+  <div style="display:flex;gap:18px;margin-top:12px;font-size:.82rem;">
+    <span><strong style="color:#ff6b6b;">Scalabilité</strong> : US-30</span>
+    <span><strong style="color:#ffd93d;">Accessibilité (RGAA)</strong> : US-24 · US-27</span>
+    <span><strong style="color:#6c63ff;">Internationalisation</strong> : US-25 · US-26 · US-28 · US-29</span>
+  </div>
+
+  <div class="speaker">
+    <div class="speaker-dot"></div>
+    Krishmini KULAKRISHNA — Story Mapping
+  </div>
 </div>
 
 <!-- ═══════════════════════════════════════
@@ -860,12 +1016,12 @@
   <div style="font-size:.75rem;color:var(--text-muted);margin-top:8px;">
     📊 Formule : Score = (Impact × 10) / Effort · US-09, US-08 reportées en contrepartie
   </div>
-  <div class="speaker"><div class="speaker-dot"></div>Krishmini KULAKRISHNA — Décision MoSCoW</div>
+  <div class="speaker"><div class="speaker-dot"></div>Danielle Jamila Koagne Ngankam — Décision MoSCoW</div>
 </div>
 
 <!-- ═══════════════════════════════════════
      SLIDE 13 — J2 INTRO
-═══════════════════════════════════════ -->
+═══════════════════════════════ -->
 <div class="slide bg-orange">
   <div class="perturb-badge" style="background:rgba(255,159,67,.15);border-color:rgba(255,159,67,.5);"><div class="perturb-dot" style="background:var(--gold);"></div>Perturbation J2 · Mardi 10h00</div>
   <h2 style="font-size:2rem;text-align:center;">« La latence inacceptable »</h2>
@@ -933,7 +1089,7 @@
       </div>
     </div>
   </div>
-  <div class="speaker"><div class="speaker-dot"></div>Mohammed DERKAOUI — ADR · Wicramachine SERGIO — Implémentation</div>
+  <div class="speaker"><div class="speaker-dot"></div>Ousmane NDIAYE — Implémentation</div>
 </div>
 
 <!-- ═══════════════════════════════════════
